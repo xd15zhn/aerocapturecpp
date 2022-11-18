@@ -8,8 +8,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
     simf1 = new MFcnMISO(sim, BusSize(3, 1), "simf1");  // 多入单出函数f1,输出向量L
     simf2 = new MFcnMISO(sim, BusSize(3, 1), "simf2");  // 多入单出函数f2,输出向量D
     simf3 = new MFcnMISO(sim, BusSize(3, 1), "simf3");  // 多入单出函数f3,输出加速度向量
-    simIntv = new MStateSpace(sim, BusSize(3, 1), true, "simIntv");  // 积分器输出速度向量v
     simIntr = new MStateSpace(sim, BusSize(3, 1), true, "simIntr");  // 积分器输出位置向量r
+    simIntv = new MStateSpace(sim, BusSize(3, 1), true, "simIntv");  // 积分器输出速度向量v
     simgain = new MGain(sim, Mat(vecdble{1}), true, "simgain");
 
     sim->connectM(simf3, simIntv);
@@ -26,8 +26,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         Dnorm = -Dnorm/Vnorm;
         return Mat(Dnorm*v);
     });
-    sim->connectM(simIntv, simf2);  // 函数f2的输入参数r
-    sim->connectM(simIntr, simf2);  // 函数f2的输入参数v
+    sim->connectM(simIntr, simf2);  // 函数f2的输入参数r
+    sim->connectM(simIntv, simf2);  // 函数f2的输入参数v
     sim->connectM(simgain, simf2);  // 函数f2的输入参数sigma
     simf2->Set_Function([](Mat *u){  // 函数f2
         Vector3d r = u[0];

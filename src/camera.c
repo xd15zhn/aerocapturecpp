@@ -3,10 +3,9 @@
 #include "camera.h"
 
 #define SENSITIVITY                      0.01f
-#define CameraMoveExponential            0.8f
+#define CameraMoveExponential            0.9f
 
 float yaw, pit, dist;
-Vector2 mousePosPre;
 const char moveControl[4] = { 'W', 'S', 'D', 'A' };
 typedef enum {
     MOVE_UP = 0,
@@ -33,6 +32,7 @@ void Init_Camera(Camera *camera)
 
 void Update_Camera(Camera *camera)
 {
+    static Vector2 mousePosPre;
     Vector2 mousePosNew, mousePosDelta;
     float mouseWheelMove = GetMouseWheelMove();
     char direction[2] = {
@@ -42,13 +42,14 @@ void Update_Camera(Camera *camera)
     dist *= pow(CameraMoveExponential, mouseWheelMove);
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         mousePosPre = GetMousePosition();
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) return;
-    mousePosNew = GetMousePosition();
-    mousePosDelta.x = mousePosNew.x - mousePosPre.x;
-    mousePosDelta.y = mousePosNew.y - mousePosPre.y;
-    mousePosPre = mousePosNew;
-    yaw += -SENSITIVITY * mousePosDelta.x;
-    pit += -SENSITIVITY * mousePosDelta.y;
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        mousePosNew = GetMousePosition();
+        mousePosDelta.x = mousePosNew.x - mousePosPre.x;
+        mousePosDelta.y = mousePosNew.y - mousePosPre.y;
+        mousePosPre = mousePosNew;
+        yaw += -SENSITIVITY * mousePosDelta.x;
+        pit += -SENSITIVITY * mousePosDelta.y;
+    }
     Vector3 vec = (Vector3){cosf(pit)*cosf(yaw), cosf(pit)*sinf(yaw), sinf(pit)};
     vec = Vector3Scale(vec, dist);
     camera->position = Vector3Subtract(camera->target, vec);

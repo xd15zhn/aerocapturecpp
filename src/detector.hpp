@@ -39,8 +39,8 @@ public:
     MFcnMISO *simf1=nullptr;
     MFcnMISO *simf2=nullptr;
     MFcnMISO *simf3=nullptr;
-    MStateSpace* simIntv=nullptr;
     MStateSpace* simIntr=nullptr;
+    MStateSpace* simIntv=nullptr;
     MGain *simgain=nullptr;
 };
 typedef MarsDetector* PMarsDetector;
