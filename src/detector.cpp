@@ -37,11 +37,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         double rho = rho0 * exp(-h/hs);
         double Vnorm = v.norm2();
         double Lnorm = rho*Vnorm*Vnorm*Sref*CL;
-        Vector3d n(0, 0, 1);
-        Vector3d n2 = v & n;
-        n2.Normalize();
-        Vector3d n1 = n2 & v;
-        n1.Normalize();
+        Vector3d n2 = (r & v).Normalize();
+        Vector3d n1 = r.Normalvector();
         return Mat(n1*Lnorm*cos(sigma) + n2*Lnorm*sin(sigma));
     });
     sim->connectM(simIntr, simf3);  // 函数f3的输入参数r
@@ -51,7 +48,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         Vector3d r = u[0];
         Vector3d L = u[1];
         Vector3d D = u[2];
-        double k = MU_MARS / r.norm2();
+        double k = r.norm2();
+        k = -MU_MARS / (k*k*k);
         return Mat(k*r + L + D);
     });
 };
