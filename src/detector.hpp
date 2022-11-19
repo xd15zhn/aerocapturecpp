@@ -8,7 +8,6 @@ using namespace zhnmat;
 using namespace std;
 
 #define PI 3.14159265358979323846f
-#define DEG2RAD (PI/180.0)
 
 constexpr double MU_MARS = 42808;  // 火星μ值
 constexpr double R_MARS = 6804.9/2.0;  //火星半径(km)

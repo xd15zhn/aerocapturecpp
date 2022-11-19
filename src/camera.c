@@ -4,6 +4,7 @@
 
 #define SENSITIVITY                      0.01f
 #define CameraMoveExponential            0.9f
+#define VAL_LIMIT(x, min, max)           (((x)<=(min) ? (min) : ((x)>=(max) ? (max) : (x))))
 
 float yaw, pit, dist;
 const char moveControl[4] = { 'W', 'S', 'D', 'A' };
@@ -49,6 +50,7 @@ void Update_Camera(Camera *camera)
         mousePosPre = mousePosNew;
         yaw += -SENSITIVITY * mousePosDelta.x;
         pit += -SENSITIVITY * mousePosDelta.y;
+        pit = VAL_LIMIT(pit, -1.57, 1.57);
     }
     Vector3 vec = (Vector3){cosf(pit)*cosf(yaw), cosf(pit)*sinf(yaw), sinf(pit)};
     vec = Vector3Scale(vec, dist);

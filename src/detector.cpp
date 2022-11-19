@@ -1,8 +1,5 @@
 #include "detector.hpp"
 
-/**********************
-一个卫星
-**********************/
 MarsDetector::MarsDetector(Simulator *sim, std::string name) {
     _name = name;
     simfh = new MFcnMISO(sim, BusSize(1, 1), "simfh");  // 多入单出函数fh,输出探测器高度h

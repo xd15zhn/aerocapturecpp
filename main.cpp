@@ -37,7 +37,7 @@ int main(void) {
     sim1.connectU(simIn, simMux, BusSize(0, 0));  // 连接输入模块与总线复用模块
     sim1.connectM(simMux, simMars, 0);  // 连接总线复用模块与被控对象子模块
     // sim1.connectM(simMars, 0, out);  // 连接被控对象子模块与输出模块
-    simIn->Set_Function([](double u){return sin(u);});  // 输入模块设置倾侧角输入函数
+    simIn->Set_Function([](double u){return 1.0;});  // 输入模块设置倾侧角输入函数
     simMars->simIntr->Set_InitialValue(Mat(vecdble{R_MARS+125, 0, 0}));  // 设置惯性坐标系下探测器初始位置向量
     simMars->simIntv->Set_InitialValue(Mat(vecdble{-v_USV*sin(0.1), v_USV*cos(0.1), 0}));  // 设置惯性坐标系下探测器初始速度向量
     sim1.Set_SimStep(0.01);  // 设置ODE4求解器仿真步长
@@ -47,8 +47,9 @@ int main(void) {
     cout << "Calculating trajectory......" << endl;
     list<Vector3> Points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
-    int progress;
-    int pointsnum = 500;
+    int pointsnum = 1500;
+    int process;
+    double h;  // 高度
     for (int n=0; n<pointsnum; n++) {
         for (int i = 0; i < 1000; i++)
             sim1.Simulate_OneStep();  // 仿真一个步长
@@ -58,8 +59,11 @@ int main(void) {
             float(point.at(1,0)) * 1e-3f, 
             float(point.at(2,0)) * 1e-3f,
         });
-        progress = int(n*100.0/pointsnum+0.5);
-        cout << progress << "\%\r";
+        h = simMars->simfh->Get_OutValue().at(0, 0);
+        process = int(n*100.0/pointsnum+0.5);
+        cout << "height:" << h << ";  process:";
+        cout << process << "\%        \r";
+        if (h<10) break;
     }
     cout << "\nTrajectory calculating finished." << endl;
 
