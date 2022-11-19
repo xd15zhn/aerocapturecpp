@@ -23,8 +23,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         double fnorm = rho*Vnorm*Vnorm*Sref*CD;  // 阻力大小
         Vector3d D = -fnorm/Vnorm*v;  // 阻力向量
         fnorm *= LD;  // 升力大小
-        Vector3d n2 = (r & v).Normalize();  // 组成升力的正交单位向量
         Vector3d n1 = r.Normalvector();  // 组成升力的正交单位向量
+        Vector3d n2 = (r & v).Normalvector();  // 组成升力的正交单位向量
         Vector3d L = n1*fnorm*cos(sigma) + n2*fnorm*sin(sigma);  // 升力向量
         return Mat(L+D);  // 气动力向量
     });

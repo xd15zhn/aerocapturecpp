@@ -4,7 +4,7 @@
 #include "detector.hpp"
 #include "camera.h"
 
-// #define DEBUG
+#define DEBUG
 #define FULL_SCREEN
 
 void Draw_Frame_Oxyz() {
@@ -38,7 +38,7 @@ int main(void) {
     sim1.connectM(simMux, simMars, 0);  // 连接总线复用模块与被控对象子模块
     // sim1.connectM(simMars, 0, out);  // 连接被控对象子模块与输出模块
     simIn->Set_Function([](double u){return 1.0;});  // 输入模块设置倾侧角输入函数
-    simMars->simIntr->Set_InitialValue(Mat(vecdble{R_MARS+125, 0, 0}));  // 设置惯性坐标系下探测器初始位置向量
+    simMars->simIntr->Set_InitialValue(Mat(vecdble{R_MARS+125e-3, 0, 0}));  // 设置惯性坐标系下探测器初始位置向量
     simMars->simIntv->Set_InitialValue(Mat(vecdble{-v_USV*sin(0.1), v_USV*cos(0.1), 0}));  // 设置惯性坐标系下探测器初始速度向量
     sim1.Set_SimStep(0.01);  // 设置ODE4求解器仿真步长
     sim1.Initialize();  // 仿真器初始化
@@ -47,25 +47,31 @@ int main(void) {
     cout << "Calculating trajectory......" << endl;
     list<Vector3> Points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
-    int pointsnum = 1500;
+    int pointsnum = 250;
     int process;
     Mat hmat;  // 高度
+    Vector3d debuga,debugv;
     double h;
-    for (int n=0; n<pointsnum; n++) {
-        for (int i = 0; i < 1000; i++)
-            sim1.Simulate_OneStep();  // 仿真一个步长
+    int n, err;
+    for (n=0; n<pointsnum; n++) {
+        sim1.Simulate_OneStep();  // 仿真一个步长
+        debuga = Vector3d(simMars->simfA->Get_OutValue());
+        debugv = Vector3d(simMars->simIntv->Get_OutValue());
         point = simMars->simIntr->Get_OutValue();  // 记录轨迹点
         Points.push_back((Vector3){  // 存储轨迹点
-            float(point.at(0,0)) * 1e-3f, 
-            float(point.at(1,0)) * 1e-3f, 
-            float(point.at(2,0)) * 1e-3f,
+            float(point.at(0,0)), 
+            float(point.at(1,0)), 
+            float(point.at(2,0)),
         });
         hmat = simMars->simIntr->Get_OutValue();
+        if (n>=245)
+            err=1;
         h = Vector3d(hmat).norm2() - R_MARS;
         process = int(n*100.0/pointsnum+0.5);
-        cout << "height:" << h << ";  process:";
+        cout << "height:" << h*1e3 << ";  process:";
         cout << process << "\%        \r";
-        if (h<10) break;
+        if (h<10e-3)
+            break;
     }
     cout << "\nTrajectory calculating finished." << endl;
 
