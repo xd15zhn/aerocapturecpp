@@ -22,6 +22,7 @@ constexpr double hs = 8.8057;  // 比例高度(km)
 constexpr double Sref = 17.44e-6;  // 飞行器参考面积(km^2)
 constexpr double CD = 1.43;  // 阻力系数
 constexpr double CL = 0.4;  // 升力系数
+constexpr double LD = 0.28;  // 升阻比
 
 /**********************
 火星探测器被控对象
@@ -35,9 +36,7 @@ public:
     // Mat Get_Position();
     // Mat Get_Velocity();
     std::string _name;
-    MFcnMISO *simfh=nullptr;
-    MFcnMISO *simfL=nullptr;
-    MFcnMISO *simfD=nullptr;
+    MFcnMISO *simfLD=nullptr;
     MFcnMISO *simfA=nullptr;
     MStateSpace* simIntr=nullptr;
     MStateSpace* simIntv=nullptr;

@@ -49,7 +49,8 @@ int main(void) {
     Mat point(3, 1);  // 记录轨迹点
     int pointsnum = 1500;
     int process;
-    double h;  // 高度
+    Mat hmat;  // 高度
+    double h;
     for (int n=0; n<pointsnum; n++) {
         for (int i = 0; i < 1000; i++)
             sim1.Simulate_OneStep();  // 仿真一个步长
@@ -59,7 +60,8 @@ int main(void) {
             float(point.at(1,0)) * 1e-3f, 
             float(point.at(2,0)) * 1e-3f,
         });
-        h = simMars->simfh->Get_OutValue().at(0, 0);
+        hmat = simMars->simIntr->Get_OutValue();
+        h = Vector3d(hmat).norm2() - R_MARS;
         process = int(n*100.0/pointsnum+0.5);
         cout << "height:" << h << ";  process:";
         cout << process << "\%        \r";
