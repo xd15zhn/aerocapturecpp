@@ -5,31 +5,37 @@
 **********************/
 MarsDetector::MarsDetector(Simulator *sim, std::string name) {
     _name = name;
-    simf1 = new MFcnMISO(sim, BusSize(3, 1), "simf1");  // 多入单出函数f1,输出向量L
-    simf2 = new MFcnMISO(sim, BusSize(3, 1), "simf2");  // 多入单出函数f2,输出向量D
-    simf3 = new MFcnMISO(sim, BusSize(3, 1), "simf3");  // 多入单出函数f3,输出加速度向量
+    simfh = new MFcnMISO(sim, BusSize(1, 1), "simfh");  // 多入单出函数fh,输出探测器高度h
+    simfD = new MFcnMISO(sim, BusSize(3, 1), "simfD");  // 多入单出函数fD,输出向量D
+    simfL = new MFcnMISO(sim, BusSize(3, 1), "simfL");  // 多入单出函数fL,输出向量L
+    simfA = new MFcnMISO(sim, BusSize(3, 1), "simfA");  // 多入单出函数fA,输出加速度向量
     simIntr = new MStateSpace(sim, BusSize(3, 1), true, "simIntr");  // 积分器输出位置向量r
     simIntv = new MStateSpace(sim, BusSize(3, 1), true, "simIntv");  // 积分器输出速度向量v
-    simgain = new MGain(sim, Mat(vecdble{1}), true, "simgain");
+    simgain = new MGain(sim, Mat(vecdble{1}), true, "simgain");  // 子模块的输入端口
 
-    sim->connectM(simf3, simIntv);
-    sim->connectM(simIntv, simIntr);
-    sim->connectM(simIntr, simf1);  // 函数f1的输入参数r
-    sim->connectM(simIntv, simf1);  // 函数f1的输入参数v
-    simf1->Set_Function([](Mat *u){  // 函数f1
+    sim->connectM(simfA, simIntv);  // 连接函数fA与速度向量
+    sim->connectM(simIntv, simIntr);  // 连接速度向量与位置向量
+    sim->connectM(simIntr, simfh);  // 函数fh的输入参数r
+    simfh->Set_Function([](Mat *u){  // 函数fh
         Vector3d r = u[0];
-        Vector3d v = u[1];
         double h = r.norm2() - R_MARS;
+        return Mat(vecdble{h});
+    });
+    sim->connectM(simfh, simfD);  // 函数fD的输入参数h
+    sim->connectM(simIntv, simfD);  // 函数fD的输入参数v
+    simfD->Set_Function([](Mat *u){  // 函数fD
+        double h = u[0].at(0, 0);
+        Vector3d v = u[1];
         double rho = rho0 * exp(-h/hs);
         double Vnorm = v.norm2();
         double Dnorm = rho*Vnorm*Vnorm*Sref*CD;
         Dnorm = -Dnorm/Vnorm;
         return Mat(Dnorm*v);
     });
-    sim->connectM(simIntr, simf2);  // 函数f2的输入参数r
-    sim->connectM(simIntv, simf2);  // 函数f2的输入参数v
-    sim->connectM(simgain, simf2);  // 函数f2的输入参数sigma
-    simf2->Set_Function([](Mat *u){  // 函数f2
+    sim->connectM(simIntr, simfL);  // 函数fL的输入参数r
+    sim->connectM(simIntv, simfL);  // 函数fL的输入参数v
+    sim->connectM(simgain, simfL);  // 函数fL的输入参数sigma
+    simfL->Set_Function([](Mat *u){  // 函数fL
         Vector3d r = u[0];
         Vector3d v = u[1];
         double sigma = u[2].at(0, 0);
@@ -41,10 +47,10 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         Vector3d n1 = r.Normalvector();
         return Mat(n1*Lnorm*cos(sigma) + n2*Lnorm*sin(sigma));
     });
-    sim->connectM(simIntr, simf3);  // 函数f3的输入参数r
-    sim->connectM(simf2, simf3);  // 函数f3的输入参数L
-    sim->connectM(simf1, simf3);  // 函数f3的输入参数D
-    simf3->Set_Function([](Mat *u){  // 函数f3
+    sim->connectM(simIntr, simfA);  // 函数fA的输入参数r
+    sim->connectM(simfL, simfA);  // 函数fA的输入参数L
+    sim->connectM(simfD, simfA);  // 函数fA的输入参数D
+    simfA->Set_Function([](Mat *u){  // 函数fA
         Vector3d r = u[0];
         Vector3d L = u[1];
         Vector3d D = u[2];

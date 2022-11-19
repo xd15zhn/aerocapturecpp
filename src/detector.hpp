@@ -36,9 +36,10 @@ public:
     // Mat Get_Position();
     // Mat Get_Velocity();
     std::string _name;
-    MFcnMISO *simf1=nullptr;
-    MFcnMISO *simf2=nullptr;
-    MFcnMISO *simf3=nullptr;
+    MFcnMISO *simfh=nullptr;
+    MFcnMISO *simfL=nullptr;
+    MFcnMISO *simfD=nullptr;
+    MFcnMISO *simfA=nullptr;
     MStateSpace* simIntr=nullptr;
     MStateSpace* simIntv=nullptr;
     MGain *simgain=nullptr;
