@@ -5,7 +5,7 @@
 #include "camera.h"
 
 // #define DEBUG
-// #define FULL_SCREEN
+#define FULL_SCREEN
 
 void Draw_Frame_Oxyz() {
     float len=10, a=0.2;
@@ -26,9 +26,11 @@ void Draw_Trajectory(list<Vector3>& point) {
 }
 
 int main(void) {
-    /**********************
-    仿真部分
-    **********************/
+/**********************
+仿真部分
+**********************/
+    Mat initR = Mat(vecdble{MARS_R+USV_H, 0, 0});
+    Mat initV = Mat(vecdble{-USV_V*sin(USV_Gamma), USV_V*cos(USV_Gamma), 0});
     Simulator sim1;  // 添加仿真器(#include "simucpp.hpp")
     auto *simIn = new UInput(&sim1, "simIn");  // 往仿真器中添加输入模块
     auto *simMars = new MarsDetector(&sim1, "simMars");  // 往仿真器中添加被控对象子模块:火星探测器
@@ -37,20 +39,22 @@ int main(void) {
     sim1.connectU(simIn, simMux, BusSize(0, 0));  // 连接输入模块与总线复用模块
     sim1.connectM(simMux, simMars, 0);  // 连接总线复用模块与被控对象子模块
     // sim1.connectM(simMars, 0, out);  // 连接被控对象子模块与输出模块
-    simIn->Set_Function([](double u){return 1.0;});  // 输入模块设置倾侧角输入函数
-    simMars->simIntr->Set_InitialValue(Mat(vecdble{R_MARS+125e-3, 0, 0}));  // 设置惯性坐标系下探测器初始位置向量
-    simMars->simIntv->Set_InitialValue(Mat(vecdble{-v_USV*sin(0.1), v_USV*cos(0.1), 0}));  // 设置惯性坐标系下探测器初始速度向量
+    simIn->Set_Function([](double u){return 1;});  // 输入模块设置倾侧角输入函数
+    simMars->simIntr->Set_InitialValue(initR);  // 设置惯性坐标系下探测器初始位置向量
+    simMars->simIntv->Set_InitialValue(initV);  // 设置惯性坐标系下探测器初始速度向量
+    sim1.Set_EnableStore(false);
     sim1.Initialize();  // 仿真器初始化
     // sim1.Simulate();  // 一次性跑完仿真
     // sim1.Plot();  // 波形显示
     cout << "Calculating trajectory......" << endl;
     list<Vector3> Points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
-    int pointsnum = 10000;
+    int pointsnum = 1000;
     int process;
     Mat hmat;  // 高度
     double h;
-    int cnt=100;
+    double vabs = -1;
+    int cnt=10;
     for (int n=0; n<pointsnum; n++) {
         sim1.Simulate_OneStep();  // 仿真一个步长
         point = simMars->simIntr->Get_OutValue();  // 记录轨迹点
@@ -61,21 +65,25 @@ int main(void) {
         });
         hmat = simMars->simIntr->Get_OutValue();
         if (cnt>=10) {
-            h = Vector3d(hmat).norm2() - R_MARS;
+            h = Vector3d(hmat).norm2() - MARS_R;
             process = int(n*100.0/pointsnum+0.5);
             cout << "height:" << h*1e3 << ";  process:";
             cout << process << "\%        \r";
             cnt=0;
         }
         cnt++;
-        if (h<10e-3) break;
+        if (h<HMIN) break;
+        if (h>H_ATMOS && vabs<0)
+        vabs = Vector3d(simMars->simIntv->Get_OutValue()).norm2();
     }
     cout << "\nTrajectory calculating finished." << endl;
+    cout << simMars->simIntr->Get_OutValue() << endl;
+    cout << vabs << endl;
 
 #ifndef DEBUG
-    /**********************
-    3D展示部分
-    **********************/
+/**********************
+3D展示部分
+**********************/
     Camera camera;  // 添加相机
 	SetConfigFlags(FLAG_MSAA_4X_HINT);  // 4倍反锯齿
     SetTargetFPS(60);

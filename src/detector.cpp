@@ -17,8 +17,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         Vector3d r = u[0];
         Vector3d v = u[1];
         double sigma = u[2].at(0, 0);
-        double h = r.norm2() - R_MARS;  // 距火星表面高度
-        double rho = rho0 * exp(-h/hs);  // 当前高度下的大气密度
+        double h = r.norm2() - MARS_R;  // 距火星表面高度
+        double rho = (h<H_ATMOS) ? rho0*exp(-h/hs) : 0;  // 当前高度下的大气密度
         double Vnorm = v.norm2();  // 速度大小
         double fnorm = rho*Vnorm*Vnorm*Sref*CD;  // 阻力大小
         Vector3d D = -fnorm/Vnorm*v;  // 阻力向量
@@ -34,8 +34,8 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
         Vector3d r = u[0];
         Vector3d fLD = u[1];
         double k = r.norm2();
-        k = -MU_MARS / (k*k*k);
-        return Mat(k*r + fLD);
+        k = -MARS_MU / (k*k*k);
+        return Mat(k*r + fLD/USV_M);
     });
 };
 
