@@ -1,6 +1,6 @@
-#include "detector.hpp"
+#include "spacecraft.hpp"
 
-MarsDetector::MarsDetector(Simulator *sim, std::string name) {
+Spacecraft::Spacecraft(Simulator *sim, std::string name) {
     _name = name;
     simfLD = new MFcnMISO(sim, BusSize(3, 1), "simfL");  // 多入单出函数fLD,输出气动力向量f_{LD}
     simfA = new MFcnMISO(sim, BusSize(3, 1), "simfA");  // 多入单出函数fA,输出加速度向量
@@ -39,11 +39,11 @@ MarsDetector::MarsDetector(Simulator *sim, std::string name) {
     });
 };
 
-PMatModule MarsDetector::Get_InputBus(int n) const {
+PMatModule Spacecraft::Get_InputBus(int n) const {
     if (n==0) return simgain;
     return nullptr;
 };
-PMatModule MarsDetector::Get_OutputBus(int n) const {
+PMatModule Spacecraft::Get_OutputBus(int n) const {
     if (n==0) return simIntr;
     return nullptr;
 };

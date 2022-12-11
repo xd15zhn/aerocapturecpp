@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <list>
-#include "detector.hpp"
+#include "spacecraft.hpp"
 #include "camera.h"
 
 // #define DEBUG
@@ -31,15 +31,16 @@ int main(void) {
 **********************/
     Mat initR = Mat(vecdble{MARS_R+USV_H, 0, 0});
     Mat initV = Mat(vecdble{-USV_V*sin(USV_Gamma), USV_V*cos(USV_Gamma), 0});
+    double sigmaInit = 1;  // 倾侧角
     Simulator sim1;  // 添加仿真器(#include "simucpp.hpp")
     auto *simIn = new UInput(&sim1, "simIn");  // 往仿真器中添加输入模块
-    auto *simMars = new MarsDetector(&sim1, "simMars");  // 往仿真器中添加被控对象子模块:火星探测器
+    auto *simMars = new Spacecraft(&sim1, "simMars");  // 往仿真器中添加被控对象子模块:火星探测器
     auto *simMux = new Mux(&sim1, BusSize(1, 1), "simMux");  // 往仿真器中添加总线复用模块，将倾侧角输入的标量信号转换为矩阵信号
     // auto *out = new MOutput(&sim1);  // 往仿真器中添加输出模块，用于展示波形图。若展示3D轨迹则不需要
     sim1.connectU(simIn, simMux, BusSize(0, 0));  // 连接输入模块与总线复用模块
     sim1.connectM(simMux, simMars, 0);  // 连接总线复用模块与被控对象子模块
     // sim1.connectM(simMars, 0, out);  // 连接被控对象子模块与输出模块
-    simIn->Set_Function([](double u){return 1;});  // 输入模块设置倾侧角输入函数
+    simIn->Set_Function([sigmaInit](double u){return sigmaInit;});  // 输入模块设置倾侧角输入函数
     simMars->simIntr->Set_InitialValue(initR);  // 设置惯性坐标系下探测器初始位置向量
     simMars->simIntv->Set_InitialValue(initV);  // 设置惯性坐标系下探测器初始速度向量
     sim1.Set_EnableStore(false);
@@ -49,13 +50,10 @@ int main(void) {
     cout << "Calculating trajectory......" << endl;
     list<Vector3> Points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
-    int pointsnum = 1000;
-    int process;
     Mat hmat;  // 高度
     double h;
     double vabs = -1;
-    int cnt=10;
-    for (int n=0; n<pointsnum; n++) {
+    for (int n=0; n<1000; n++) {
         sim1.Simulate_OneStep();  // 仿真一个步长
         point = simMars->simIntr->Get_OutValue();  // 记录轨迹点
         Points.push_back((Vector3){  // 存储轨迹点
@@ -64,14 +62,8 @@ int main(void) {
             float(point.at(2,0)),
         });
         hmat = simMars->simIntr->Get_OutValue();
-        if (cnt>=10) {
-            h = Vector3d(hmat).norm2() - MARS_R;
-            process = int(n*100.0/pointsnum+0.5);
-            cout << "height:" << h*1e3 << ";  process:";
-            cout << process << "\%        \r";
-            cnt=0;
-        }
-        cnt++;
+        h = Vector3d(hmat).norm2() - MARS_R;
+        // cout << h*1e3 << endl;
         if (h<HMIN) break;
         if (h>H_ATMOS && vabs<0)
         vabs = Vector3d(simMars->simIntv->Get_OutValue()).norm2();
@@ -102,7 +94,7 @@ int main(void) {
         BeginDrawing();
             ClearBackground(BLACK);
             BeginMode3D(camera);
-                DrawGrid(120, 5);
+                DrawGrid(100, 6);
                 DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 2, ORANGE);  // 画3D球
                 // Draw_Frame_Oxyz();  // 坐标系测试
                 Draw_Trajectory(Points);  // 画3D轨迹

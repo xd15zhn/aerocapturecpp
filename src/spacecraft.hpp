@@ -1,5 +1,5 @@
-#ifndef ORBITALSIM_H
-#define ORBITALSIM_H
+#ifndef SPACECRAFT_H
+#define SPACECRAFT_H
 
 #include <cmath>
 #include "simucpp.hpp"
@@ -27,10 +27,10 @@ constexpr double HMIN = 10e-3;  // 飞行器最低允许飞行高度
 /**********************
 火星探测器被控对象
 **********************/
-class MarsDetector: public PackModule {
+class Spacecraft: public PackModule {
 public:
-    MarsDetector(Simulator *sim, std::string name);
-    ~MarsDetector() {};
+    Spacecraft(Simulator *sim, std::string name);
+    ~Spacecraft() {};
     virtual PMatModule Get_InputBus(int n) const;
     virtual PMatModule Get_OutputBus(int n) const;
     // Mat Get_Position();
@@ -42,6 +42,6 @@ public:
     MStateSpace* simIntv=nullptr;
     MGain *simgain=nullptr;
 };
-typedef MarsDetector* PMarsDetector;
+typedef Spacecraft* PSpacecraft;
 
-#endif // ORBITALSIM_H
+#endif // SPACECRAFT_H
