@@ -30,10 +30,10 @@ int main(void) {
 仿真部分
 **********************/
     Mat matr(vecdble{MARS_R+USV_HINIT, 0, 0});  // 位置向量
-    Mat matv(vecdble{-SPFY_USV_V*sin(USV_Gamma), SPFY_USV_V*cos(USV_Gamma), 0});  // 速度向量
-    double sigmaInit = 1;  // 倾侧角
+    Mat matv(vecdble{-REAL_USV_V*sin(USV_Gamma), REAL_USV_V*cos(USV_Gamma), 0});  // 速度向量
+    double sigmaInit = 0.24;  // 倾侧角
     Spacecraft spacecraft;
-    spacecraft.marsMu = SPFY_MARS_MU;
+    spacecraft.marsMu = REAL_MARS_MU;
     spacecraft.mssIntr->Set_InitialValue(matr);  // 设置惯性坐标系下探测器初始位置向量
     spacecraft.mssIntv->Set_InitialValue(matv);  // 设置惯性坐标系下探测器初始速度向量
     spacecraft.cnstSigma->Set_OutValue(sigmaInit);  // 设置倾侧角常数输入
@@ -43,7 +43,7 @@ int main(void) {
     Mat hmat;  // 高度
     double h;
     double vabs = -1;
-    for (int n=0; n<1000; n++) {
+    for (int n=0; n<1e4; n++) {
         spacecraft.sim1.Simulate_OneStep();  // 仿真一个步长
         point = spacecraft.mssIntr->Get_OutValue();  // 记录轨迹点
         Points.push_back((Vector3){  // 存储轨迹点

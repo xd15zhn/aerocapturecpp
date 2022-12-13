@@ -1,8 +1,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define PI 3.14159265358979323846
-
+constexpr double infinity = 1e12;  // 无穷大
 // constexpr double USV_CL = 0.4;  // 升力系数
 constexpr double USV_CD = 1.43;  // 阻力系数
 constexpr double USV_LD = 0.28;  // 升阻比
