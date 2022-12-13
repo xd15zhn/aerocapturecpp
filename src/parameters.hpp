@@ -1,7 +1,6 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-constexpr double infinity = 1e12;  // 无穷大
 // constexpr double USV_CL = 0.4;  // 升力系数
 constexpr double USV_CD = 1.43;  // 阻力系数
 constexpr double USV_LD = 0.28;  // 升阻比
@@ -24,5 +23,9 @@ constexpr double SPFY_USV_V = 5.8*SPFY_RATE;
 /*下面的值对应精确模型中的换算参数*/
 constexpr double REAL_MARS_MU = MARS_MU*REAL_RATE*REAL_RATE;
 constexpr double REAL_USV_V = 5.8*REAL_RATE;
+
+constexpr double infinity = 1e12;  // 无穷大
+constexpr double Dsigma = 0.1;  // 倾侧角增量
+constexpr double TARGET_APOAPSIS = MARS_R + 2250;  // 倾侧角增量
 
 #endif // PARAMETERS_H
