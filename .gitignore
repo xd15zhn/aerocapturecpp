@@ -1,3 +1,5 @@
 /.vscode/
 /build/
+/build_debug/
+/build_test/
 /resources/

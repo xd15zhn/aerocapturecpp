@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.12)
-project(untitled VERSION 0.1.4)
+project(untitled)
 set(CMAKE_BUILD_TYPE release)
+# set(CMAKE_BUILD_TYPE debug)
 set(CPP_LIBRARIES_PATH "C:/Users/xd15zhn/Documents/cpplibraries")
 list(APPEND CMAKE_PREFIX_PATH ${CPP_LIBRARIES_PATH})
 
 set(PROJECT_SOURCES
-    ${PROJECT_SOURCE_DIR}/main.cpp
-    ${PROJECT_SOURCE_DIR}/src/spacecraft.cpp
+    # ${PROJECT_SOURCE_DIR}/main.cpp
+    ${PROJECT_SOURCE_DIR}/test.cpp
     ${PROJECT_SOURCE_DIR}/src/camera.c
+    ${PROJECT_SOURCE_DIR}/src/spacecraft.cpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})

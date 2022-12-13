@@ -19,11 +19,11 @@ Spacecraft::Spacecraft() {
         Vector3d v = u[1];
         double sigma = u[2].at(0, 0);
         double h = r.norm2() - MARS_R;  // 距火星表面高度
-        double rho = (h<H_ATMOS) ? rho0*exp(-h/hs) : 0;  // 当前高度下的大气密度
+        double rho = (h<MARS_ATMOS_H) ? MARS_rho0*exp(-h/MARS_hs) : 0;  // 当前高度下的大气密度
         double Vnorm = v.norm2();  // 速度大小
-        double fnorm = rho*Vnorm*Vnorm*Sref*CD;  // 阻力大小
+        double fnorm = rho*Vnorm*Vnorm*USV_SREF*USV_CD;  // 阻力大小
         Vector3d D = -fnorm/Vnorm*v;  // 阻力向量
-        fnorm *= LD;  // 升力大小
+        fnorm *= USV_LD;  // 升力大小
         Vector3d n1 = r.Normalvector();  // 组成升力的正交单位向量
         Vector3d n2 = (r & v).Normalvector();  // 组成升力的正交单位向量
         Vector3d L = n1*fnorm*cos(sigma) + n2*fnorm*sin(sigma);  // 升力向量
@@ -35,7 +35,7 @@ Spacecraft::Spacecraft() {
         Vector3d r = u[0];
         Vector3d fLD = u[1];
         double k = r.norm2();
-        k = -MARS_MU / (k*k*k);
+        k = -marsMu / (k*k*k);
         return Mat(k*r + fLD/USV_M);
     });
     sim1.Set_EnableStore(false);  // 单步仿真不需要存储数据
