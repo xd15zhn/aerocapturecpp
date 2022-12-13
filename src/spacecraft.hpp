@@ -27,20 +27,17 @@ constexpr double HMIN = 10e-3;  // 飞行器最低允许飞行高度
 /**********************
 火星探测器被控对象
 **********************/
-class Spacecraft: public PackModule {
+class Spacecraft {
 public:
-    Spacecraft(Simulator *sim, std::string name);
+    Spacecraft();
     ~Spacecraft() {};
-    virtual PMatModule Get_InputBus(int n) const;
-    virtual PMatModule Get_OutputBus(int n) const;
-    // Mat Get_Position();
-    // Mat Get_Velocity();
-    std::string _name;
-    MFcnMISO *simfLD=nullptr;
-    MFcnMISO *simfA=nullptr;
-    MStateSpace* simIntr=nullptr;
-    MStateSpace* simIntv=nullptr;
-    MGain *simgain=nullptr;
+    Simulator sim1;  // 添加仿真器(#include "simucpp.hpp")
+    MFcnMISO *fcnfLD=nullptr;  // 多入单出函数fLD,输出气动力向量f_{LD}
+    MFcnMISO *fcnfA=nullptr;  // 多入单出函数fA,输出加速度向量
+    MStateSpace *mssIntr=nullptr;  // 积分器输出位置向量r
+    MStateSpace *mssIntv=nullptr;  // 积分器输出速度向量v
+    UConstant *cnstSigma=nullptr;  // 常数模块输出倾侧角
+    Mux *muxSigma=nullptr;  // 单线转总线
 };
 typedef Spacecraft* PSpacecraft;
 

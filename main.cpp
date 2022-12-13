@@ -32,21 +32,10 @@ int main(void) {
     Mat initR = Mat(vecdble{MARS_R+USV_H, 0, 0});
     Mat initV = Mat(vecdble{-USV_V*sin(USV_Gamma), USV_V*cos(USV_Gamma), 0});
     double sigmaInit = 1;  // 倾侧角
-    Simulator sim1;  // 添加仿真器(#include "simucpp.hpp")
-    auto *simIn = new UInput(&sim1, "simIn");  // 往仿真器中添加输入模块
-    auto *simMars = new Spacecraft(&sim1, "simMars");  // 往仿真器中添加被控对象子模块:火星探测器
-    auto *simMux = new Mux(&sim1, BusSize(1, 1), "simMux");  // 往仿真器中添加总线复用模块，将倾侧角输入的标量信号转换为矩阵信号
-    // auto *out = new MOutput(&sim1);  // 往仿真器中添加输出模块，用于展示波形图。若展示3D轨迹则不需要
-    sim1.connectU(simIn, simMux, BusSize(0, 0));  // 连接输入模块与总线复用模块
-    sim1.connectM(simMux, simMars, 0);  // 连接总线复用模块与被控对象子模块
-    // sim1.connectM(simMars, 0, out);  // 连接被控对象子模块与输出模块
-    simIn->Set_Function([sigmaInit](double u){return sigmaInit;});  // 输入模块设置倾侧角输入函数
-    simMars->simIntr->Set_InitialValue(initR);  // 设置惯性坐标系下探测器初始位置向量
-    simMars->simIntv->Set_InitialValue(initV);  // 设置惯性坐标系下探测器初始速度向量
-    sim1.Set_EnableStore(false);
-    sim1.Initialize();  // 仿真器初始化
-    // sim1.Simulate();  // 一次性跑完仿真
-    // sim1.Plot();  // 波形显示
+    Spacecraft spacecraft;
+    spacecraft.mssIntr->Set_InitialValue(initR);  // 设置惯性坐标系下探测器初始位置向量
+    spacecraft.mssIntv->Set_InitialValue(initV);  // 设置惯性坐标系下探测器初始速度向量
+    spacecraft.cnstSigma->Set_OutValue(sigmaInit);  // 设置倾侧角常数输入
     cout << "Calculating trajectory......" << endl;
     list<Vector3> Points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
@@ -54,22 +43,22 @@ int main(void) {
     double h;
     double vabs = -1;
     for (int n=0; n<1000; n++) {
-        sim1.Simulate_OneStep();  // 仿真一个步长
-        point = simMars->simIntr->Get_OutValue();  // 记录轨迹点
+        spacecraft.sim1.Simulate_OneStep();  // 仿真一个步长
+        point = spacecraft.mssIntr->Get_OutValue();  // 记录轨迹点
         Points.push_back((Vector3){  // 存储轨迹点
             float(point.at(0,0)), 
             float(point.at(1,0)), 
             float(point.at(2,0)),
         });
-        hmat = simMars->simIntr->Get_OutValue();
+        hmat = spacecraft.mssIntr->Get_OutValue();
         h = Vector3d(hmat).norm2() - MARS_R;
         // cout << h*1e3 << endl;
         if (h<HMIN) break;
         if (h>H_ATMOS && vabs<0)
-        vabs = Vector3d(simMars->simIntv->Get_OutValue()).norm2();
+        vabs = Vector3d(spacecraft.mssIntv->Get_OutValue()).norm2();
     }
     cout << "\nTrajectory calculating finished." << endl;
-    cout << simMars->simIntr->Get_OutValue() << endl;
+    cout << spacecraft.mssIntr->Get_OutValue() << endl;
     cout << vabs << endl;
 
 #ifndef DEBUG
