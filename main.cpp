@@ -3,17 +3,17 @@
 #include <list>
 #include "spacecraft.hpp"
 #include "identifier.hpp"
-#include "camera.h"
 
 #define DEBUG
 #define FULL_SCREEN
 
 #ifndef DEBUG
-// 类型转换
+#include "camera.h"
+/*类型转换*/
 Vector3 MatToVector3(Mat m) {
     return (Vector3) {float(m.at(0,0)), float(m.at(1,0)), float(m.at(2,0))};
 }
-// 画轨迹
+/*画轨迹*/
 void Draw_Trajectory(list<Vector3>& point) {
     std::list<Vector3>::iterator it = point.begin();
     Vector3 posstart, posend;
@@ -27,24 +27,11 @@ void Draw_Trajectory(list<Vector3>& point) {
 }
 #endif
 
-/**********************
-计算简化模型`usv`在常值倾侧角`sigma`输入下的远拱点高度
-**********************/
-double Calc_Apoapsis(Spacecraft& usv) {
-    usv.sim1.Simulation_Reset();
-    Vector3d vecr, vecv;  // 位置和速度向量
-    double height;  // 高度
-    while (1) {
-        usv.sim1.Simulate_OneStep();
-        vecr = Vector3d(usv.mssIntr->Get_OutValue());
-        height = vecr.norm2() - MARS_R;
-        if (height > MARS_ATMOS_H) break;  // 飞出大气层
-        if (height < USV_HMIN) {  // 高度过低
-            cout << "Simplified simulation: Height too low!" << endl; exit(1);
-        }
-    }
-    vecv = Vector3d(usv.mssIntv->Get_OutValue()) / SPFY_RATE;  // 速度向量
-    double rnorminv = 1/(height + MARS_R);  // 位置向量长度的倒数
+/*由位置速度向量计算远拱点高度*/
+double RV_to_Apoapsis(Mat r, Mat v) {
+    Vector3d vecr = Vector3d(r);  // 位置向量
+    Vector3d vecv = Vector3d(v);  // 速度向量
+    double rnorminv = 1/(vecr.norm2());  // 位置向量长度的倒数
     double energy = vecv*vecv*0.5 - MARS_MU*rnorminv;  // 轨道能量
     if (energy > 0)
         return infinity;
@@ -54,6 +41,25 @@ double Calc_Apoapsis(Spacecraft& usv) {
     return a*(1+e);
 }
 
+/**********************
+计算简化模型`usv`在常值倾侧角`sigma`输入下的远拱点高度
+**********************/
+double Calc_Apoapsis(Spacecraft& usv) {
+    usv.sim1.Simulation_Reset();
+    double height;  // 高度
+    Mat r;
+    while (1) {
+        usv.sim1.Simulate_OneStep();
+        r = usv.mssIntr->Get_OutValue();
+        height = Vector3d(r).norm2() - MARS_R;
+        if (height > MARS_ATMOS_H) break;  // 飞出大气层
+        if (height < USV_HMIN) {  // 高度过低
+            cout << "Simplified simulation: Height too low!" << endl; exit(1);
+        }
+    }
+    return RV_to_Apoapsis(r, usv.mssIntv->Get_OutValue()/SPFY_RATE);
+}
+
 int main(void) {
 /**********************
 仿真部分
@@ -61,6 +67,8 @@ int main(void) {
     Spacecraft usvStd;  // 飞行器参考简化模型(unmanned space vehicle, standard)
     Spacecraft usvDta;  // 飞行器增量简化模型(unmanned space vehicle, delta)
     Spacecraft usvReal;  // 飞行器精确模型
+    // list<Vector3> points;  // 存储轨迹点
+    Mat point(3, 1);  // 记录轨迹点
     double rstd, rdta;  // 远拱点高度的参考值和增量值
     double sigma=0.2;  // 当前倾侧角
     double Ak;  // 输入变换系数
@@ -75,6 +83,7 @@ int main(void) {
     usvReal.marsMu = REAL_MARS_MU;
     usvReal.mssIntr->Set_InitialValue(matr);
     usvReal.mssIntv->Set_InitialValue(Mat(vecdble{-REAL_USV_V*sin(USV_Gamma), REAL_USV_V*cos(USV_Gamma), 0}));
+    cout << "Calculating trajectory......" << endl;
     while (t < 100) {
         /*更新参考模型的输入倾侧角和起始位置，计算远拱点高度*/
         usvStd.cnstSigma->Set_OutValue(sigma);
@@ -89,19 +98,18 @@ int main(void) {
         /*计算被控对象输出值，即经过输入变换的远拱点误差*/
         Ak = (rdta - rstd) / (cos(sigma + Dsigma) - cos(sigma));
         if (Ak == 0) {  // 制导律失效
-            cout << "Guidance error!(1) " << t << endl; exit(1);
+            cout << "Guidance error! " << t << endl; exit(1);
         }
         yk = (rstd - TARGET_APOAPSIS) / Ak;
         /*将远拱点误差送入制导律，计算控制量*/
         sigma = idf.Update(yk);
-        // if ((sigma > 1) || (sigma < -1)) {  // 制导律失效
-        //     cout << "Guidance error!(2) " << t << endl; exit(1);
-        // }
         sigma = acos(sigma);
         /*以当前控制量仿真1秒，即一个离散周期*/
         usvReal.cnstSigma->Set_OutValue(sigma);
         for (int i = 0; i < 100; i++) {
             usvReal.sim1.Simulate_OneStep();
+            point = usvReal.mssIntr->Get_OutValue() * 1e-3;
+            // points.push_back(MatToVector3(point));
         }
         t += 0.1;
         /*一个离散周期后，保存位置和速度向量供下一个周期使用*/
@@ -109,12 +117,58 @@ int main(void) {
         matv = usvReal.mssIntv->Get_OutValue();
         matv = matv * SPFY_RATE / REAL_RATE;
         h = Vector3d(matr).norm2() - MARS_R;
-        cout << sigma << ", " << h << endl;
+        // cout << sigma << ", " << h << endl;
         if (h < USV_HMIN) {  // 高度过低
             cout << "Real simulation: Height too low!" << t << endl; exit(1);
         }
         if (h > MARS_ATMOS_H)  // 飞出大气层
             break;
     }
+    t = 0;
+    cout << "Flew out of the atmosphere. Apoapsis: ";
+    cout << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
+    while (t < 500) {
+        for (int i = 0; i < 100; i++) {
+            usvReal.sim1.Simulate_OneStep();
+            point = usvReal.mssIntr->Get_OutValue() * 1e-3;
+            // points.push_back(MatToVector3(point));
+        }
+        t += 0.1;
+    }
+    cout << "Trajectory calculating finished." << endl;
+    // cout << usvReal.mssIntr->Get_OutValue() << endl;
+    cout << "Height:" << h << endl;
+
+/**********************
+绘图
+**********************/
+#ifndef DEBUG
+    Camera camera;
+	SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetTargetFPS(60);
+#ifdef FULL_SCREEN
+    SetWindowMonitor(1);
+    SetConfigFlags(FLAG_FULLSCREEN_MODE);
+    InitGraph(0, 0, "RayLib-3D");
+#else
+    InitGraph(1024, 768, "RayLib-3D");
+#endif
+	Init_Camera(&camera);
+    Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
+
+    while (!WindowShouldClose()) {
+        Update_Camera(&camera);
+        BeginDrawing();
+            ClearBackground(BLACK);
+            BeginMode3D(camera);
+                DrawGrid(120, 6);
+                DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 2, ORANGE);
+                Draw_Trajectory(points);
+            EndMode3D();
+            DrawText(TextFormat("%2i FPS", GetFPS()), 0, 0, 20, LIME);
+        EndDrawing();
+    }
+    CloseGraph();
+#endif
     return 0;
 }
