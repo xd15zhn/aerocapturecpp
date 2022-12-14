@@ -8,7 +8,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CPP_LIBRARIES_PATH})
 set(PROJECT_SOURCES
     ${PROJECT_SOURCE_DIR}/main.cpp
     # ${PROJECT_SOURCE_DIR}/test.cpp
-    # ${PROJECT_SOURCE_DIR}/src/camera.c
+    ${PROJECT_SOURCE_DIR}/src/camera.c
     ${PROJECT_SOURCE_DIR}/src/spacecraft.cpp
 )
 

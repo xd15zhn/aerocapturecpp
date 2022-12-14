@@ -4,7 +4,7 @@
 #include "spacecraft.hpp"
 #include "identifier.hpp"
 
-#define DEBUG
+// #define DEBUG
 #define FULL_SCREEN
 
 #ifndef DEBUG
@@ -37,9 +37,9 @@ double RV_to_Apoapsis(Mat r, Mat v) {
         cout << "Hyperbolic orbit." << endl;
         return infinity;
     }
-    double a = -0.5*MARS_MU/energy;  // 半长轴
+    double a = -0.5*MARS_MU / energy;  // 半长轴
     Vector3d ham = vecr & vecv;  // 角动量(angular momentum)
-    double e = (vecv & ham /MARS_MU - vecr*rnorminv).norm2();  // 偏心率
+    double e = ((vecv & ham) / MARS_MU - vecr*rnorminv).norm2();  // 偏心率
     return a*(1+e);
 }
 
@@ -49,7 +49,7 @@ double RV_to_Apoapsis(Mat r, Mat v) {
 double Calc_Apoapsis(Spacecraft& usv) {
     usv.sim1.Simulation_Reset();
     double height;  // 高度
-    Mat r;  // 位置向量
+    Mat r, v;  // 位置向量
     while (1) {
         usv.sim1.Simulate_OneStep();
         r = usv.mssIntr->Get_OutValue();
@@ -69,7 +69,7 @@ int main(void) {
     Spacecraft usvStd;  // 飞行器参考简化模型(unmanned space vehicle, standard)
     Spacecraft usvDta;  // 飞行器增量简化模型(unmanned space vehicle, delta)
     Spacecraft usvReal;  // 飞行器精确模型
-    // list<Vector3> points;  // 存储轨迹点
+    list<Vector3> points;  // 存储轨迹点
     Mat point(3, 1);  // 记录轨迹点
     double rstd, rdta;  // 远拱点高度的参考值和增量值
     double sigma=0.2;  // 当前倾侧角
@@ -77,7 +77,6 @@ int main(void) {
     double yk;  // 变换后的远拱点误差
     double h;  // 精确仿真模型中的飞行器高度
     double t = 0;  // 仿真时间
-    int err;
     ParamIdentifier idf;  // 制导律
     Mat matr(vecdble{MARS_R+USV_HINIT, 0, 0});  // 位置向量
     Mat matv(vecdble{-SPFY_USV_V*sin(USV_Gamma), SPFY_USV_V*cos(USV_Gamma), 0});  // 速度向量
@@ -86,7 +85,7 @@ int main(void) {
     usvReal.marsMu = REAL_MARS_MU;
     usvReal.mssIntr->Set_InitialValue(matr);
     usvReal.mssIntv->Set_InitialValue(Mat(vecdble{-REAL_USV_V*sin(USV_Gamma), REAL_USV_V*cos(USV_Gamma), 0}));
-    cout << "Calculating trajectory......" << endl;
+    cout << "Calculating trajectory inside atmosphere......" << endl;
     while (t < 100) {
         /*更新参考模型的输入倾侧角和起始位置，计算远拱点高度*/
         usvStd.cnstSigma->Set_OutValue(sigma);
@@ -107,18 +106,15 @@ int main(void) {
             cout << "Guidance error!(1) " << t << endl; exit(1);
         }
         yk = (rstd - TARGET_APOAPSIS) / Ak;
-        if (rstd < TARGET_APOAPSIS)
-            err = 1;
         /*将远拱点误差送入制导律，计算控制量*/
         sigma = idf.Update(yk);
         sigma = acos(sigma);
         /*以当前控制量仿真1秒，即一个离散周期*/
         usvReal.cnstSigma->Set_OutValue(sigma);
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++)
             usvReal.sim1.Simulate_OneStep();
-            point = usvReal.mssIntr->Get_OutValue() * 1e-3;
-            // points.push_back(MatToVector3(point));
-        }
+        point = usvReal.mssIntr->Get_OutValue() * 1e-3;
+        points.push_back(MatToVector3(point));
         t += 0.1;
         /*一个离散周期后，保存位置和速度向量供下一个周期使用*/
         matr = usvReal.mssIntr->Get_OutValue();
@@ -126,11 +122,10 @@ int main(void) {
         matv = matv * SPFY_RATE / REAL_RATE;
         h = Vector3d(matr).norm2() - MARS_R;
         /*调试、打印与判断*/
+        cout << h << "\r";
         // cout << h << ", " << rstd << ", " << sigma << endl;
-        cout << sigma << matr << matv << endl;
+        // cout << sigma << matr << matv << endl;
         // cout << idf._theta << endl;
-        if (t>=3.6)
-            err = 1;
         if (h < USV_HMIN) {  // 高度过低
             cout << "Real simulation: Height too low!" << t << endl; exit(1);
         }
@@ -138,19 +133,25 @@ int main(void) {
             break;
     }
     t = 0;
-    cout << "Flew out of the atmosphere. Apoapsis: ";
-    cout << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
-    while (t < 100) {
-        for (int i = 0; i < 1000; i++) {
+    cout << "\nFlew out of the atmosphere." << endl;
+    cout << "Target Apoapsis: " << TARGET_APOAPSIS << endl;
+    cout << "Calculated Apoapsis: " << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
+    cout << "Calculating trajectory outside atmosphere......" << endl;
+    int process;
+    double total = 4;
+    while (t < total*100) {
+        for (int i = 0; i < 1000; i++)
             usvReal.sim1.Simulate_OneStep();
-            point = usvReal.mssIntr->Get_OutValue() * 1e-3;
-            // points.push_back(MatToVector3(point));
-        }
+        point = usvReal.mssIntr->Get_OutValue() * 1e-3;
+        points.push_back(MatToVector3(point));
         t += 1;
+        process = t/total + 0.5;
+        cout << process << "\%\r";
     }
-    cout << "Trajectory calculating finished." << endl;
+    cout << "\nTrajectory calculating finished." << endl;
     // cout << usvReal.mssIntr->Get_OutValue() << endl;
-    cout << "Height:" << h << endl;
+    h = Vector3d(usvReal.mssIntr->Get_OutValue()).norm2();
+    cout << "Current distance after " << total*100 << " seconds: " << h << endl;
 
 /**********************
 绘图
