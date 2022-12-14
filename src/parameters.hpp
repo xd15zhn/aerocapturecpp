@@ -25,7 +25,7 @@ constexpr double REAL_MARS_MU = MARS_MU*REAL_RATE*REAL_RATE;
 constexpr double REAL_USV_V = 5.8*REAL_RATE;
 
 constexpr double infinity = 1e12;  // 无穷大
-constexpr double Dsigma = 0.1;  // 倾侧角增量
+constexpr double Dsigma = -1e-3;  // 倾侧角增量
 constexpr double TARGET_APOAPSIS = MARS_R + 2250;  // 倾侧角增量
 
 #endif // PARAMETERS_H

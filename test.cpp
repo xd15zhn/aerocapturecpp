@@ -29,11 +29,11 @@ int main(void) {
 /**********************
 仿真部分
 **********************/
-    Mat matr(vecdble{MARS_R+USV_HINIT, 0, 0});  // 位置向量
-    Mat matv(vecdble{-REAL_USV_V*sin(USV_Gamma), REAL_USV_V*cos(USV_Gamma), 0});  // 速度向量
-    double sigmaInit = 0.24;  // 倾侧角
+    Mat matr(vecdble{3488.90441861845, 205.560854425716, 0.00171434201665447});  // 位置向量
+    Mat matv(vecdble{-11346.3927967462, 57070.5810874428, 1.90742767926822});  // 速度向量
+    double sigmaInit = 1.40936529948025;  // 倾侧角
     Spacecraft spacecraft;
-    spacecraft.marsMu = REAL_MARS_MU;
+    spacecraft.marsMu = SPFY_MARS_MU;
     spacecraft.mssIntr->Set_InitialValue(matr);  // 设置惯性坐标系下探测器初始位置向量
     spacecraft.mssIntv->Set_InitialValue(matv);  // 设置惯性坐标系下探测器初始速度向量
     spacecraft.cnstSigma->Set_OutValue(sigmaInit);  // 设置倾侧角常数输入
@@ -53,15 +53,15 @@ int main(void) {
         });
         hmat = spacecraft.mssIntr->Get_OutValue();
         h = Vector3d(hmat).norm2() - MARS_R;
-        // cout << h*1e3 << endl;
+        // cout << h << endl;
         if (h < USV_HMIN) {  // 高度过低
-            cout << "Simplified simulation: Height too low!" << endl; exit(1);
+            cout << "Simplified simulation: Height too low!" << n << endl; break;
         }
         vabs = Vector3d(spacecraft.mssIntv->Get_OutValue()).norm2();
     }
     cout << "Trajectory calculating finished." << endl;
-    cout << spacecraft.mssIntr->Get_OutValue() << endl;
-    cout << vabs << endl;
+    // cout << spacecraft.mssIntr->Get_OutValue() << endl;
+    cout << h << endl;
 
 #ifndef DEBUG
 /**********************

@@ -19,6 +19,7 @@ public:
         _theta = Mat(vecdble{0.5, 0.5});  // 待辨识参数初始值
         _u = 0.2;  // 控制量初始值
         _lambda = 0.03;
+        _l1 = 1e-2;
         _yk1 = 0;
     };
     double Update(double yk) {
@@ -30,7 +31,7 @@ public:
         double _beta0 = LIMIT(_theta.at(1, 0), 0.1, 0.9);
         _theta.set(0, 0, _alpha1);
         _theta.set(1, 0, _beta0);
-        double uL = (_l1 * _alpha1 * yk) / _beta0;
+        double uL = -(_l1 * _alpha1 * yk) / _beta0;
         // _u = LIMIT(_u + uL, 0.26, 2.88);
         _u = LIMIT(_u + uL, -0.97, 0.97);
         return _u;
@@ -39,7 +40,7 @@ public:
     Mat _theta;  // 特征模型参数(_alpha1, _beta0)
     double _lambda;  // 遗忘因子
     double _yk1;  // y(k-1)
-    double _l1 = 0.4;  // 制导律参数
+    double _l1;  // 制导律参数
     double _u;  // 控制量
 };
 

@@ -33,8 +33,10 @@ double RV_to_Apoapsis(Mat r, Mat v) {
     Vector3d vecv = Vector3d(v);  // 速度向量
     double rnorminv = 1/(vecr.norm2());  // 位置向量长度的倒数
     double energy = vecv*vecv*0.5 - MARS_MU*rnorminv;  // 轨道能量
-    if (energy > 0)
+    if (energy >= 0) {  // 没有入轨
+        cout << "Hyperbolic orbit." << endl;
         return infinity;
+    }
     double a = -0.5*MARS_MU/energy;  // 半长轴
     Vector3d ham = vecr & vecv;  // 角动量(angular momentum)
     double e = (vecv & ham /MARS_MU - vecr*rnorminv).norm2();  // 偏心率
@@ -47,7 +49,7 @@ double RV_to_Apoapsis(Mat r, Mat v) {
 double Calc_Apoapsis(Spacecraft& usv) {
     usv.sim1.Simulation_Reset();
     double height;  // 高度
-    Mat r;
+    Mat r;  // 位置向量
     while (1) {
         usv.sim1.Simulate_OneStep();
         r = usv.mssIntr->Get_OutValue();
@@ -75,7 +77,8 @@ int main(void) {
     double yk;  // 变换后的远拱点误差
     double h;  // 精确仿真模型中的飞行器高度
     double t = 0;  // 仿真时间
-    ParamIdentifier idf;
+    int err;
+    ParamIdentifier idf;  // 制导律
     Mat matr(vecdble{MARS_R+USV_HINIT, 0, 0});  // 位置向量
     Mat matv(vecdble{-SPFY_USV_V*sin(USV_Gamma), SPFY_USV_V*cos(USV_Gamma), 0});  // 速度向量
     usvStd.marsMu = SPFY_MARS_MU;
@@ -96,11 +99,16 @@ int main(void) {
         usvDta.mssIntv->Set_InitialValue(matv);
         rdta = Calc_Apoapsis(usvDta);
         /*计算被控对象输出值，即经过输入变换的远拱点误差*/
+        // if (sigma + Dsigma < 0) {  // 制导律失效
+        //     cout << "Guidance error!(2) " << t << endl; exit(1);
+        // }
         Ak = (rdta - rstd) / (cos(sigma + Dsigma) - cos(sigma));
         if (Ak == 0) {  // 制导律失效
-            cout << "Guidance error! " << t << endl; exit(1);
+            cout << "Guidance error!(1) " << t << endl; exit(1);
         }
         yk = (rstd - TARGET_APOAPSIS) / Ak;
+        if (rstd < TARGET_APOAPSIS)
+            err = 1;
         /*将远拱点误差送入制导律，计算控制量*/
         sigma = idf.Update(yk);
         sigma = acos(sigma);
@@ -117,7 +125,12 @@ int main(void) {
         matv = usvReal.mssIntv->Get_OutValue();
         matv = matv * SPFY_RATE / REAL_RATE;
         h = Vector3d(matr).norm2() - MARS_R;
-        // cout << sigma << ", " << h << endl;
+        /*调试、打印与判断*/
+        // cout << h << ", " << rstd << ", " << sigma << endl;
+        cout << sigma << matr << matv << endl;
+        // cout << idf._theta << endl;
+        if (t>=3.6)
+            err = 1;
         if (h < USV_HMIN) {  // 高度过低
             cout << "Real simulation: Height too low!" << t << endl; exit(1);
         }
@@ -127,13 +140,13 @@ int main(void) {
     t = 0;
     cout << "Flew out of the atmosphere. Apoapsis: ";
     cout << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
-    while (t < 500) {
-        for (int i = 0; i < 100; i++) {
+    while (t < 100) {
+        for (int i = 0; i < 1000; i++) {
             usvReal.sim1.Simulate_OneStep();
             point = usvReal.mssIntr->Get_OutValue() * 1e-3;
             // points.push_back(MatToVector3(point));
         }
-        t += 0.1;
+        t += 1;
     }
     cout << "Trajectory calculating finished." << endl;
     // cout << usvReal.mssIntr->Get_OutValue() << endl;
