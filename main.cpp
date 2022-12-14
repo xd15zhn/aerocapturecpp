@@ -73,6 +73,7 @@ int main(void) {
     Mat point(3, 1);  // 记录轨迹点
     double rstd, rdta;  // 远拱点高度的参考值和增量值
     double sigma=0.2;  // 当前倾侧角
+    signed char usign = 1;  // 倾侧角正负
     double Ak;  // 输入变换系数
     double yk;  // 变换后的远拱点误差
     double h;  // 精确仿真模型中的飞行器高度
@@ -102,13 +103,17 @@ int main(void) {
         //     cout << "Guidance error!(2) " << t << endl; exit(1);
         // }
         Ak = (rdta - rstd) / (cos(sigma + Dsigma) - cos(sigma));
-        if (Ak == 0) {  // 制导律失效
-            cout << "Guidance error!(1) " << t << endl; exit(1);
-        }
+        // if (Ak == 0) {  // 制导律失效
+        //     cout << "Guidance error!(1) " << t << endl; exit(1);
+        // }
         yk = (rstd - TARGET_APOAPSIS) / Ak;
         /*将远拱点误差送入制导律，计算控制量*/
         sigma = idf.Update(yk);
-        sigma = acos(sigma);
+        if (matv.at(2, 0) > 2500 * exp(-0.02*t))
+            usign = -1;
+        else if (matv.at(2, 0) < -2500 * exp(-0.02*t))
+            usign = 1;
+        sigma = usign * acos(sigma);
         /*以当前控制量仿真1秒，即一个离散周期*/
         usvReal.cnstSigma->Set_OutValue(sigma);
         for (int i = 0; i < 100; i++)
@@ -122,8 +127,8 @@ int main(void) {
         matv = matv * SPFY_RATE / REAL_RATE;
         h = Vector3d(matr).norm2() - MARS_R;
         /*调试、打印与判断*/
-        cout << h << "\r";
-        // cout << h << ", " << rstd << ", " << sigma << endl;
+        cout << t << "s, height: " << h << "        \r";
+        // cout << t << ", " << h << ", " << sigma << ", " << matv.at(2, 0) << endl;
         // cout << sigma << matr << matv << endl;
         // cout << idf._theta << endl;
         if (h < USV_HMIN) {  // 高度过低
@@ -137,6 +142,7 @@ int main(void) {
     cout << "Target Apoapsis: " << TARGET_APOAPSIS << endl;
     cout << "Calculated Apoapsis: " << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
     cout << "Calculating trajectory outside atmosphere......" << endl;
+    // return 0;
     int process;
     double total = 4;
     while (t < total*100) {

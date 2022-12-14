@@ -18,8 +18,8 @@ public:
         _P = eye(2) * 1e6;  // P矩阵初始值
         _theta = Mat(vecdble{0.5, 0.5});  // 待辨识参数初始值
         _u = 0.2;  // 控制量初始值
-        _lambda = 0.03;
-        _l1 = 1e-2;
+        _lambda = 0.5;
+        _l1 = 0.2;
         _yk1 = 0;
     };
     double Update(double yk) {
