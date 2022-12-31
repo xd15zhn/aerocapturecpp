@@ -143,21 +143,20 @@ int main(void) {
     cout << "Calculated Apoapsis: " << RV_to_Apoapsis(matr, matv/SPFY_RATE) << endl;
     cout << "Calculating trajectory outside atmosphere......" << endl;
     // return 0;
-    int process;
-    double total = 4;
+    double hpre = h;  // 存储高度，到远拱点时退出
+    double total = 5;  // 远拱点不存在时强制退出
     while (t < total*100) {
         for (int i = 0; i < 1000; i++)
             usvReal.sim1.Simulate_OneStep();
         point = usvReal.mssIntr->Get_OutValue() * 1e-3;
         points.push_back(MatToVector3(point));
+        h = Vector3d(usvReal.mssIntr->Get_OutValue()).norm2();
         t += 1;
-        process = t/total + 0.5;
-        cout << process << "\%\r";
+        cout << h << "    \r";
+        if (hpre > h) break;
+        hpre = h;
     }
     cout << "\nTrajectory calculating finished." << endl;
-    // cout << usvReal.mssIntr->Get_OutValue() << endl;
-    h = Vector3d(usvReal.mssIntr->Get_OutValue()).norm2();
-    cout << "Current distance after " << total*100 << " seconds: " << h << endl;
 
 /**********************
 绘图

@@ -17,12 +17,11 @@
 `main.cpp`运行后的结果如下
 ```
 Calculating trajectory inside atmosphere......
-56.5s, height: 150.202
+56.5s, height: 150.202        
 Flew out of the atmosphere.
 Target Apoapsis: 5652.5
 Calculated Apoapsis: 5652.5
 Calculating trajectory outside atmosphere......
-100%
+5652.49    
 Trajectory calculating finished.
-Current distance after 400 seconds: 5650.39
 ```
